@@ -1,0 +1,6 @@
+# Licensing
+
+This repository uses a dual license depending on the type of file:
+
+- **Source code** (parametric CAD scripts in `src/`, build/configuration files, and tooling) is licensed under the **MIT License**. See [LICENSE-MIT](LICENSE-MIT).
+- **3D models, exported meshes, renders, and documentation** (`exports/`, `renders/`, and Markdown documentation) are licensed under the **Creative Commons Attribution 4.0 International (CC BY 4.0)** license. See [LICENSE-CC-BY-4.0](LICENSE-CC-BY-4.0).

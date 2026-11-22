@@ -1,0 +1,13 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[settings]
+python.uv_venv_auto = "create|source"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.sync]
+description = "Sync Python dependencies from pyproject.toml into .venv using uv"
+run = "uv sync"
