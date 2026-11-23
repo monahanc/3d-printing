@@ -4,6 +4,8 @@ A modular, katana-style horizontal display rack for storing and showcasing stand
 
 Stack anywhere from **1 to 6 tiers** using tool-free sliding dovetail joints and mortise-and-tenon crossbars—staying comfortably within a **33 cm (330 mm) maximum height** (ideal for shelves and IKEA Kallax cubes).
 
+**[Interactive 3D Preview](https://monahanc.github.io/3d-printing/concert-penlight-rack/)**
+
 ![6-Tier Assembly Views](renders/assembly_views.png)
 
 ## Compatible With
