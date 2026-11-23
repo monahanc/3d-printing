@@ -9,3 +9,7 @@ __pycache__/
 # OS / Editor
 .DS_Store
 Thumbs.db
+
+# Generated interactive 3D viewers (built locally & published via GitHub Actions)
+projects/*/renders/assembly_viewer.html
+projects/*/renders/assembly_preview.glb

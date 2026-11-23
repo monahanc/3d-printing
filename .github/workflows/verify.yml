@@ -1,0 +1,97 @@
+name: Verify CAD Builds & Publish 3D Viewers
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install Python & dependencies
+        run: |
+          uv python install 3.12
+          uv sync --locked
+
+      - name: Build and verify all projects
+        run: |
+          shopt -s nullglob
+          for script in projects/*/src/generate.py; do
+            echo "::group::Running $script"
+            uv run python "$script"
+            echo "::endgroup::"
+          done
+
+      - name: Assemble GitHub Pages gallery
+        run: |
+          mkdir -p _site
+          cat <<'EOF' > _site/index.html
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>3D Printing — Interactive 3D Previews</title>
+            <style>
+              body { font-family: system-ui, sans-serif; background: #111827; color: #f3f4f6; max-width: 720px; margin: 48px auto; padding: 0 20px; }
+              h1 { margin-bottom: 8px; }
+              p { color: #9ca3af; margin-bottom: 24px; }
+              ul { list-style: none; padding: 0; display: grid; gap: 12px; }
+              a { display: block; padding: 14px 18px; background: #1f2937; border: 1px solid #374151; border-radius: 8px; color: #93c5fd; text-decoration: none; font-weight: 600; }
+              a:hover { background: #374151; }
+            </style>
+          </head>
+          <body>
+            <h1>3D Printing — Interactive Previews</h1>
+            <p>Select a project to inspect its assembled 3D model in the browser:</p>
+            <ul>
+          EOF
+          shopt -s nullglob
+          for viewer in projects/*/renders/assembly_viewer.html; do
+            proj="$(basename "$(dirname "$(dirname "$viewer")")")"
+            mkdir -p "_site/$proj"
+            cp "$viewer" "_site/$proj/index.html"
+            echo "    <li><a href=\"$proj/\">$proj</a></li>" >> _site/index.html
+          done
+          cat <<'EOF' >> _site/index.html
+            </ul>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy-pages:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -22,6 +22,7 @@ projects/<project-name>/
 
 - Keep all design work **code-first and parametric**: define key dimensions, wall thicknesses, and tolerances as named constants or parameters at the top of the design script.
 - Regenerate files in `exports/` (and `renders/` when applicable) whenever source geometry changes so exports never drift out of sync with `src/`.
+- Interactive 3D preview files (`renders/assembly_viewer.html`, `renders/assembly_preview.glb`) are gitignored and automatically built & published via [`.github/workflows/verify.yml`](.github/workflows/verify.yml).
 
 ## Design for Additive Manufacturing (DfAM)
 
