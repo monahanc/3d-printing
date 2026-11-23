@@ -472,13 +472,14 @@ def render_assembly_views(items: list[ViewerItem], out_path: Path, n_tiers: int 
         fontsize=13, fontweight="bold",
     )
     views = [
-        ("Isometric View (Front)", 22, 52),
-        ("Front View", 5, 90),
-        ("Side Profile (Right)", 3, 0),
-        ("Top-Down View", 82, 90),
+        ("Isometric View (Front)", 22, 52, False, None),
+        ("Front View (Ortho)", 0, 90, True, "y"),
+        ("Side Profile (Ortho)", 0, 0, True, "x"),
+        ("Top-Down View (Ortho)", 90, 90, True, "z"),
     ]
-    for idx, (title, elev, azim) in enumerate(views, start=1):
+    for idx, (title, elev, azim, is_ortho, hide_axis) in enumerate(views, start=1):
         ax = fig.add_subplot(2, 2, idx, projection="3d")
+        ax.set_proj_type("ortho" if is_ortho else "persp")
         for it in items:
             add_mesh_to_ax(ax, it.mesh, color=it.color, alpha=it.alpha, linewidth=0.04)
         if elev < 60:
@@ -486,9 +487,15 @@ def render_assembly_views(items: list[ViewerItem], out_path: Path, n_tiers: int 
             ax.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], [MAX_TOTAL_HEIGHT] * 5, "r--", linewidth=1.2)
         set_equal_3d_axes(ax, all_min, np.maximum(all_max, [0, 0, MAX_TOTAL_HEIGHT]), pad=12.0)
         ax.set_title(title, fontsize=11)
-        ax.set_xlabel("X (mm)")
-        ax.set_ylabel("Y (mm)")
-        ax.set_zlabel("Z (mm)")
+        ax.set_xlabel("" if hide_axis == "x" else "X (mm)")
+        ax.set_ylabel("" if hide_axis == "y" else "Y (mm)")
+        ax.set_zlabel("" if hide_axis == "z" else "Z (mm)")
+        if hide_axis == "x":
+            ax.set_xticks([])
+        elif hide_axis == "y":
+            ax.set_yticks([])
+        elif hide_axis == "z":
+            ax.set_zticks([])
         ax.view_init(elev=elev, azim=azim)
     plt.tight_layout()
     fig.savefig(out_path, bbox_inches="tight")
@@ -694,11 +701,11 @@ def main() -> None:
         subtitle_html=f"Height: {total_h:.1f} mm / {MAX_TOTAL_HEIGHT:.0f} mm max &middot; Width: {INNER_SPAN + 2 * TOWER_THICKNESS:.0f} mm",
         target=(0.0, 160.0, -35.0),
         views=[
-            CameraView("iso", "Iso", (290, 270, -340)),
-            CameraView("front", "Front", (0, 165, -480)),
-            CameraView("side", "Side", (460, 165, -35)),
-            CameraView("top", "Top", (0, 620, -36)),
-            CameraView("back", "Back", (0, 165, 420)),
+            CameraView("iso", "Iso", (290, 270, -340), ortho=False),
+            CameraView("front", "Front", (0, 160, -520), ortho=True),
+            CameraView("side", "Side", (520, 160, -35), ortho=True),
+            CameraView("top", "Top", (0, 680, -35.01), ortho=True),
+            CameraView("back", "Back", (0, 160, 480), ortho=True),
         ],
         default_view="iso",
         grid_size=500.0,

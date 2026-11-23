@@ -31,6 +31,7 @@ class CameraView:
     key: str
     label: str
     position: tuple[float, float, float]
+    ortho: bool = False
 
 
 @dataclass(frozen=True)
@@ -86,15 +87,20 @@ def export_interactive_viewer(
     glb_b64 = base64.b64encode(glb_bytes).decode("ascii")
 
     init_view = default_view or views[0].key
-    views_js = json.dumps({v.key: list(v.position) for v in views})
+    views_js = json.dumps(
+        {v.key: {"pos": list(v.position), "ortho": v.ortho} for v in views}
+    )
     buttons_html = "\n      ".join(
         f'<button data-view="{v.key}">{v.label}</button>' for v in views
     )
 
     toggle_groups = toggle_groups or {}
     toggles_html_parts = [
-        f'<label><input type="checkbox" data-group="{grp}" checked /> {lbl}</label>'
-        for grp, lbl in toggle_groups.items()
+        '<label><input type="checkbox" id="toggleOrtho" /> Orthographic projection</label>',
+        *[
+            f'<label><input type="checkbox" data-group="{grp}" checked /> {lbl}</label>'
+            for grp, lbl in toggle_groups.items()
+        ],
     ]
     if limit_box is not None:
         toggles_html_parts.append(
@@ -190,7 +196,11 @@ def export_interactive_viewer(
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111827);
 
-    const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.5, 5000);
+    const FOV = 40;
+    const perspCam = new THREE.PerspectiveCamera(FOV, innerWidth / innerHeight, 0.5, 5000);
+    const orthoCam = new THREE.OrthographicCamera(-100, 100, 100, -100, -2000, 5000);
+    let activeCam = perspCam;
+
     const renderer = new THREE.WebGLRenderer({{ antialias: true }});
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -198,10 +208,46 @@ def export_interactive_viewer(
     renderer.toneMappingExposure = 1.15;
     document.body.appendChild(renderer.domElement);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
+    const controls = new OrbitControls(activeCam, renderer.domElement);
     controls.enableDamping = true;
     const target = new THREE.Vector3({tx}, {ty}, {tz});
     controls.target.copy(target);
+
+    function updateOrthoFrustum(dist) {{
+      const aspect = innerWidth / innerHeight;
+      const halfH = Math.max(dist * Math.tan(THREE.MathUtils.degToRad(FOV / 2)), 1);
+      orthoCam.left = -halfH * aspect;
+      orthoCam.right = halfH * aspect;
+      orthoCam.top = halfH;
+      orthoCam.bottom = -halfH;
+      orthoCam.updateProjectionMatrix();
+    }}
+
+    const orthoToggle = document.getElementById('toggleOrtho');
+    function setProjection(useOrtho) {{
+      const prevCam = activeCam;
+      const dist = prevCam.position.distanceTo(controls.target);
+      if (useOrtho) {{
+        orthoCam.position.copy(prevCam.position);
+        orthoCam.up.copy(prevCam.up);
+        orthoCam.zoom = 1;
+        updateOrthoFrustum(dist);
+        activeCam = orthoCam;
+      }} else {{
+        perspCam.position.copy(prevCam.position);
+        perspCam.up.copy(prevCam.up);
+        if (prevCam === orthoCam && orthoCam.zoom > 0) {{
+          const dir = prevCam.position.clone().sub(controls.target).normalize();
+          perspCam.position.copy(controls.target).addScaledVector(dir, dist / orthoCam.zoom);
+        }}
+        perspCam.aspect = innerWidth / innerHeight;
+        perspCam.updateProjectionMatrix();
+        activeCam = perspCam;
+      }}
+      controls.object = activeCam;
+      orthoToggle.checked = useOrtho;
+      controls.update();
+    }}
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 1.15));
     const key = new THREE.DirectionalLight(0xffffff, 1.8);
@@ -233,13 +279,15 @@ def export_interactive_viewer(
 
     const views = {views_js};
     function setView(name) {{
-      const p = views[name];
-      if (!p) return;
+      const v = views[name];
+      if (!v) return;
       controls.target.copy(target);
-      camera.position.set(p[0], p[1], p[2]);
-      controls.update();
+      activeCam.position.set(v.pos[0], v.pos[1], v.pos[2]);
+      activeCam.up.set(0, 1, 0);
+      setProjection(Boolean(v.ortho));
     }}
 
+    orthoToggle.addEventListener('change', (e) => setProjection(e.target.checked));
     document.querySelectorAll('button[data-view]').forEach(btn => {{
       btn.addEventListener('click', () => setView(btn.dataset.view));
     }});
@@ -251,15 +299,16 @@ def export_interactive_viewer(
     }});
 
     addEventListener('resize', () => {{
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
+      perspCam.aspect = innerWidth / innerHeight;
+      perspCam.updateProjectionMatrix();
+      updateOrthoFrustum(orthoCam.position.distanceTo(controls.target));
       renderer.setSize(innerWidth, innerHeight);
     }});
 
     (function animate() {{
       requestAnimationFrame(animate);
       controls.update();
-      renderer.render(scene, camera);
+      renderer.render(scene, activeCam);
     }})();
   </script>
 </body>
