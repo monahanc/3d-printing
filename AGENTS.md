@@ -27,10 +27,11 @@ projects/<project-name>/
 
 ## Design for Additive Manufacturing (DfAM)
 
-Unless the user specifies a different printer or process, assume standard desktop FDM 3D printing (0.4 mm nozzle):
+Unless the user specifies a different printer or process, assume standard desktop FDM 3D printing on a **256 × 256 mm** build plate (0.4 mm nozzle, e.g., Bambu Lab A1 / P1 / X1):
 
 - **Units**: Always work in **millimeters (mm)**.
 - **Orientation**: Orient parts in their intended print orientation with the bottom resting cleanly on the build plane (`Z = 0`).
+- **Build-plate packing**: Always generate ready-to-slice `.3mf` build plates packed to **maximize bed utilization and minimize the number of plates/trips** (the user prints at a remote print farm with camera monitoring). Keep safe bed margins and ~6–8 mm part spacing, and avoid separate small test-fit plates unless explicitly requested.
 - **Tolerances & clearances**:
   - Press / tight fit: ~0.1–0.15 mm per side
   - Snug / slip fit: ~0.2–0.3 mm per side
