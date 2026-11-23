@@ -6,6 +6,7 @@ This repository stores and shares parametric, 3D-printable projects. Follow thes
 
 - **Tool & venv management**: Managed by [`mise.toml`](mise.toml) and [`pyproject.toml`](pyproject.toml) using `uv`.
 - **Dependencies**: Add required Python CAD, geometry, or rendering libraries with `uv add <package>` (for example: `build123d`, `cadquery`, `trimesh`, `numpy`, `matplotlib`) rather than installing manually with `pip`.
+- **Shared library**: Reuse helpers in [`cadlib/`](cadlib/) (`verify_mesh`, `verify_stl`, `export_interactive_viewer`, `export_3mf_plates`, `render_print_plates`, `add_mesh_to_ax`, `set_equal_3d_axes`) instead of duplicating verification, 3MF plate layout, or Three.js viewer boilerplate across projects.
 - **Running scripts**: Execute scripts inside the project virtual environment via `uv run python <script>` or directly when the `mise`-managed `.venv` is active.
 
 ## Project Organization
